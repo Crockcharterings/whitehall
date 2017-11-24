@@ -24,6 +24,48 @@ class TaxonomyTagForm
     )
   end
 
+  def published_taxons
+    @_published_taxons ||= begin
+      taxons = []
+      govuk_taxonomy.children.each do |branch|
+        matched_taxons = filter_against_taxonomy_branch(selected_taxons, branch, [])
+        taxons.concat(matched_taxons) if matched_taxons.any?
+      end
+      taxons
+    end
+  end
+
+  def visible_draft_taxons
+    @_draft_taxons ||= begin
+      taxons = []
+      govuk_taxonomy.draft_child_taxons.each do |branch|
+        matched_taxons = filter_against_taxonomy_branch(selected_taxons, branch, [])
+        taxons.concat(matched_taxons) if matched_taxons.any?
+      end
+      taxons
+    end
+  end
+
+  def invisible_draft_taxons
+    selected_taxons - published_taxons - visible_draft_taxons
+  end
+
+  def filter_against_taxonomy_branch(selected_taxons_content_ids, taxon, matched_taxons)
+    if selected_taxons_content_ids.include?(taxon.content_id)
+      matched_taxons << taxon.content_id
+    end
+
+    taxon.children.each do |child_taxon_branch|
+      filter_against_taxonomy_branch(selected_taxons, child_taxon_branch, matched_taxons)
+    end
+
+    return matched_taxons
+  end
+
+  def govuk_taxonomy
+    @_taxonomy ||= Taxonomy::GovukTaxonomy.new
+  end
+
   def publish!
     Services
       .publishing_api

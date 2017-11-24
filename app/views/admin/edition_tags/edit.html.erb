@@ -27,6 +27,8 @@
         <p>These topic pages are in development, and are not shown on GOV.UK</p>
 
         <%= render partial: "/admin/shared/tagging/taxonomy", locals: { selected_taxons: @tag_form.selected_taxons, root_taxons: @govuk_taxonomy.draft_child_taxons } %>
+
+        <!-- form.hidden_field :invisible_draft_taxons, value: @govuk_taxonomy.invisible_draft_child_taxons -->
       </div>
 
       <p>

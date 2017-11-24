@@ -58,4 +58,101 @@ class TaxonomyTagFormTest < ActiveSupport::TestCase
 
     assert_equal [child_taxon_content_id], form.most_specific_taxons
   end
+
+  test '#published_taxons returns all published taxons tagged to the content item' do
+    content_id = "64aadc14-9bca-40d9-abb6-4f21f9792a05"
+
+    publishing_api_has_links(
+      "content_id" => content_id,
+      "links" => {
+        "taxons" => ['bbbb', 'cccc']
+      },
+      "version" => 1
+    )
+
+    taxon_hash = {
+      "base_path" => "/root-path",
+      "content_id" => "aaaa",
+      "title" => "I am the root taxon.",
+      "expanded_links_hash" => {
+        "expanded_links" => {
+          "child_taxons" => [
+            {
+              "base_path" => "/child-path-one",
+              "content_id" => "bbbb",
+              "title" => "I am one child taxon.",
+              "links" => {},
+            },
+          ]
+        }
+      }
+    }
+
+    Taxonomy::GovukTaxonomy
+      .any_instance.stubs(:children)
+      .returns([Taxonomy::Tree.new(taxon_hash).root_taxon])
+
+    form = TaxonomyTagForm.load(content_id)
+    assert_equal ['bbbb'], form.published_taxons
+  end
+
+  test '#visible_draft_taxons returns all draft taxons tagged to the content item' do
+    content_id = "64aadc14-9bca-40d9-abb6-4f21f9792a05"
+
+    publishing_api_has_links(
+      "content_id" => content_id,
+      "links" => {
+        "taxons" => ['bbbb', 'cccc']
+      },
+      "version" => 1
+    )
+
+    taxon_hash = {
+      "base_path" => "/root-path",
+      "content_id" => "aaaa",
+      "title" => "I am the root taxon.",
+      "expanded_links_hash" => {
+        "expanded_links" => {
+          "child_taxons" => [
+            {
+              "base_path" => "/child-path-one",
+              "content_id" => "bbbb",
+              "title" => "I am one child taxon.",
+              "links" => {},
+            },
+          ]
+        }
+      }
+    }
+
+    Taxonomy::GovukTaxonomy
+      .any_instance.stubs(:draft_child_taxons)
+      .returns([Taxonomy::Tree.new(taxon_hash).root_taxon])
+
+    form = TaxonomyTagForm.load(content_id)
+    assert_equal ['bbbb'], form.visible_draft_taxons
+  end
+
+  test '#invisible_draft_taxons returns all invisible draft taxons tagged to the content item' do
+    content_id = "64aadc14-9bca-40d9-abb6-4f21f9792a05"
+
+    publishing_api_has_links(
+      "content_id" => content_id,
+      "links" => {
+        "taxons" => [
+          'published-taxon',
+          'draft-taxon',
+          'invisible-draft-taxon',
+        ]
+      },
+      "version" => 1
+    )
+
+    form = TaxonomyTagForm.load(content_id)
+
+    form.stubs(:published_taxons).returns(["published-taxon"])
+    form.stubs(:visible_draft_taxons).returns(["draft-taxon"])
+
+    assert_equal ['invisible-draft-taxon'], form.invisible_draft_taxons
+  end
 end

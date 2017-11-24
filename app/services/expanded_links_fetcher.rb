@@ -29,7 +29,10 @@ class ExpandedLinksFetcher
     end
 
     def selected_taxon_paths
-      response["expanded_links"].fetch("taxons", []).map { |taxon_hash| taxon_path(taxon_hash) }
+      response["expanded_links"]
+        .fetch("taxons", [])
+        .select { |taxon_hash| taxon_hash.fetch('details', {})['visible_to_departmental_editors'] }
+        .map { |taxon_hash| taxon_path(taxon_hash) }
     end
 
   private
